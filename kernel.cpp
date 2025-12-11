@@ -15,7 +15,6 @@ extern "C" void kernel_main(multiboot_info *mbi)
 { 
     cls();
     krnl.k_init_cli();
-    //krnl.k_open_file("TEST.TXT");
     
     while (true)
     {

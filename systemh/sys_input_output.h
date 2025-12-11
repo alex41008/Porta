@@ -1,3 +1,6 @@
+#ifndef SYS_INPUT_OUTPUT_H
+#define SYS_INPUT_OUTPUT_H
+
 #include <stdint.h>
 #include "sys_io.h"
 
@@ -258,3 +261,5 @@ void input(vector<char> &v, int color = VGA_COLOR_LIGHT_GREY)
         }
     }
 }
+
+#endif // SYS_INPUT_OUTPUT_H

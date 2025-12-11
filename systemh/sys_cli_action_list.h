@@ -11,15 +11,14 @@ uint32_t g_root_dir_lba = 0;
 
 struct kernel_program {
 public:
-    
-    // ... (Andere Funktionen wie k_help, k_readmbr, k_info, k_disktest, k_clear bleiben unverändert) ...
+    void k_set_text_mode_font_height() {
+        const uint16_t CRTC_INDEX = 0x3D4;
+        const uint16_t CRTC_DATA = 0x3D5;
 
-    // Hilfsfunktion zur Namensformatierung (für k_open_file)
-    // -------------------------------------------------------------------------
-// 1. fat_format_name (Rein funktional, keine Ausgabe)
-// -------------------------------------------------------------------------
+        outb(CRTC_INDEX, 0x09); 
+        outb(CRTC_DATA, 0x0F); 
+    }
 void fat_format_name(const char* filename, char* output) {
-    // Füllt den 11-Byte-Puffer mit Leerzeichen
     for (int i = 0; i < 11; i++) output[i] = ' '; 
 
     int input_pos = 0;
@@ -30,11 +29,9 @@ void fat_format_name(const char* filename, char* output) {
         char c = filename[input_pos];
 
         if (c == '.') {
-            // Springe zum Erweiterungs-Teil (Offset 8)
             output_pos = 8;
             ext_started = true;
         } else {
-            // Nur Großbuchstaben (FAT ist case-insensitive)
             if (c >= 'a' && c <= 'z') c -= 32;
 
             if (output_pos < 8 || (ext_started && output_pos < 11)) {
@@ -46,13 +43,7 @@ void fat_format_name(const char* filename, char* output) {
     }
 }
 
-// -------------------------------------------------------------------------
-// 2. __k_init_filesystem__ (Minimale Ausgabe)
-// -------------------------------------------------------------------------
 void __k_init_filesystem__() {
-    
-    // --- SCHRITT 1: CONTROLLER STABILISIEREN & MBR LESEN ---
-    //print_string("Attempting ATA Controller stabilization...\n");
     ata_command_readmbr(); 
     
     for (volatile int i = 0; i < 10000; i++); 
@@ -62,15 +53,10 @@ void __k_init_filesystem__() {
     
     g_partition_lba = first_partition_lba;
     
-    // --- SCHRITT 2: VBR LESEN (Volume Boot Record) ---
     uint16_t vbr_buffer[256]; 
-    //print_string("Reading VBR from LBA ");
-    //print_int(g_partition_lba); 
-    //print_string("...\n");
     
     ata_read_sector(g_partition_lba, vbr_buffer);
-    
-    // --- SCHRITT 3: VBR PRÜFEN & METADATEN PARSEN ---
+ 
     uint8_t* byte_ptr = (uint8_t*)vbr_buffer; 
     uint16_t actual_signature = *(uint16_t*)&byte_ptr[510]; 
 
@@ -85,14 +71,7 @@ void __k_init_filesystem__() {
     g_reserved_sectors = *(uint16_t*)&byte_ptr[14]; 
     g_fat_count = byte_ptr[16]; 
 
-    // Root Directory LBA berechnen und global speichern
     g_root_dir_lba = g_partition_lba + g_reserved_sectors + (g_fat_count * g_fat_size);
-    
-    //print_string("FAT Root Directory LBA calculated to start at: ");
-    //print_int(g_root_dir_lba); 
-    //print_char('\n');
-    
-    // --- SCHRITT 4: ROOT DIRECTORY LESEN & PARSEN (Ohne vollständigen Debug) ---
 
     uint16_t root_dir_buffer[256]; 
     ata_read_sector(g_root_dir_lba, root_dir_buffer);
@@ -101,26 +80,21 @@ void __k_init_filesystem__() {
 
     print_string("\n--- Root Directory Entries ---\n");
 
-    // Nur gültige Dateien auflisten (die die Filterung in k_open_file überstehen würden)
     for (int i = 0; i < 16; i++) {
         
         if (entries[i].filename[0] == 0x00) break; 
-        
-        // Ignoriere: gelöschte Dateien (0xE5) und Volume Labels/LFN (0x08 oder 0x0F)
+
         if (entries[i].filename[0] == 0xE5 || (entries[i].attributes & 0x08) || (entries[i].attributes == 0x0F)) {
             continue;
         }
         
-        // Dateinamen ausgeben
         print_string("File: ");
-        
-        // Dateiname (8 Bytes)
+
         for (int j = 0; j < 8; j++) {
             if (entries[i].filename[j] == ' ') break;
             print_char(entries[i].filename[j]);
         }
-        
-        // Erweiterung (3 Bytes)
+
         if (entries[i].ext[0] != ' ') {
             print_char('.');
             for (int j = 0; j < 3; j++) {
@@ -129,7 +103,6 @@ void __k_init_filesystem__() {
             }
         }
 
-        // Größe ausgeben
         print_string(" (Size: ");
         print_int(entries[i].file_size);
         print_string(" Bytes)\n");
@@ -138,10 +111,6 @@ void __k_init_filesystem__() {
     print_string("------------------------------\n");
 }
 
-
-// -------------------------------------------------------------------------
-// 3. k_open_file (Minimale Ausgabe)
-// -------------------------------------------------------------------------
 FAT_Directory_Entry* k_open_file(const char* filename) {
     
     uint32_t root_dir_lba = g_root_dir_lba;
@@ -154,7 +123,6 @@ FAT_Directory_Entry* k_open_file(const char* filename) {
     char search_name[11];
     this->fat_format_name(filename, search_name); 
 
-    // Nur Ausgabe, wenn gesucht wird (kann für den "schlanken" Modus entfernt werden)
     // print_string("\nSearching for file: ");
     // print_string(filename);
     // print_string("...\n");
@@ -162,18 +130,15 @@ FAT_Directory_Entry* k_open_file(const char* filename) {
     for (int i = 0; i < FAT_ENTRIES_PER_SECTOR; i++) {
         
         if (entries[i].filename[0] == FAT_ENTRY_UNUSED) break; 
-        
-        // Ignoriere LFN, Volume Label, gelöschte Dateien
+
         if (entries[i].filename[0] == FAT_ENTRY_DELETED || 
             (entries[i].attributes & FAT_ATTR_VOLUME_ID) || 
             (entries[i].attributes == FAT_ATTR_LFN)) {
             continue;
         }
 
-        // Getrennter Vergleich von Name (8 Bytes) und Extension (3 Bytes)
         bool name_match = true;
         
-        // Teil 1: Name (8 Bytes)
         for (int j = 0; j < 8; j++) {
             if (entries[i].filename[j] != search_name[j]) {
                 name_match = false;
@@ -183,7 +148,6 @@ FAT_Directory_Entry* k_open_file(const char* filename) {
         
         if (!name_match) continue;
 
-        // Teil 2: Extension (3 Bytes)
         for (int j = 0; j < 3; j++) {
             if (entries[i].ext[j] != search_name[8 + j]) {
                 name_match = false;
@@ -192,17 +156,14 @@ FAT_Directory_Entry* k_open_file(const char* filename) {
         }
 
         if (name_match) {
-            // Ausgabe: Datei gefunden und Inhalt wird gelesen
             print_string("Reading File ");
             print_string(filename);
             print_string(": \n");
 
-            // --- Lesen des ersten Clusters ---
             uint32_t first_cluster = entries[i].first_cluster_low; 
             
             if (first_cluster == 0) first_cluster = FAT32_ROOT_CLUSTER; 
-            
-            // LBA des Daten-Clusters (angenommen 1 Sektor pro Cluster)
+
             uint32_t cluster_lba = g_root_dir_lba + (first_cluster - FAT32_ROOT_CLUSTER); 
 
             char cluster_buffer[512];
@@ -282,6 +243,7 @@ void k_show_files(const vector<char>& a) {
     }
     void k_init_cli() {
         k_print_info();
+        k_set_text_mode_font_height();
         //__k_init_filesystem__();
     }
     void k_enter_gui(const vector<char>& a) {
@@ -293,20 +255,17 @@ void k_show_files(const vector<char>& a) {
     void k_draw_test(const vector<char>& a) {
     if (str_cmp_literal(a, "drawtest")) {
         
-        // Stellen Sie sicher, dass wir im Grafikmodus sind, bevor wir zeichnen
         vga_set_mode_13h(); 
 
-        // Zeichne einen roten Rahmen (Index 4 ist typischerweise Rot)
         for (int x = 0; x < VGA_WIDTH; x++) {
-            put_pixel(x, 0, 4); // Oberer Rand
-            put_pixel(x, VGA_HEIGHT - 1, 4); // Unterer Rand
+            put_pixel(x, 0, 4);
+            put_pixel(x, VGA_HEIGHT - 1, 4);
         }
         for (int y = 0; y < VGA_HEIGHT; y++) {
-            put_pixel(0, y, 4); // Linker Rand
-            put_pixel(VGA_WIDTH - 1, y, 4); // Rechter Rand
+            put_pixel(0, y, 4);
+            put_pixel(VGA_WIDTH - 1, y, 4);
         }
-        
-        // Zeichne ein blaues Quadrat in der Mitte (Index 1 ist typischerweise Blau)
+  
         for (int y = 50; y < 150; y++) {
             for (int x = 50; x < 270; x++) {
                 put_pixel(x, y, 1); 
@@ -319,38 +278,24 @@ void k_show_files(const vector<char>& a) {
         
         print_string("Enter Filename: ");
         
-        // Vektor für die Benutzereingabe (Dateiname)
         vector<char> input_vec;
-        
-        // Ruft Ihre input-Funktion auf, die den Cursor bewegt und '\n' hinzufügt
-        // Hinweis: print_char('\n') am Ende von k_input wird das Trennzeichen sein.
+
         this->k_input(input_vec); 
-        
-        // 1. Eingabe trimmen (Leerzeichen entfernen)
-        // Voraussetzung: trim_vec() ist verfügbar (wie in Ihrem ursprünglichen Code gesehen)
-        // trim_vec(input_vec); // Kann optional sein, wenn Nutzer Leerzeichen eingeben könnten
-        
-        // 2. Vektor in null-terminierten String umwandeln
-        // Wir benötigen einen Puffer auf dem Stack. +1 für das Null-Byte.
-        // MAX_FILENAME_LENGTH sollte groß genug sein (z.B. 12 oder mehr).
+
         const size_t MAX_FILENAME_LENGTH = 16; 
         char filename_buffer[MAX_FILENAME_LENGTH];
         
         size_t len = input_vec.size();
         if (len >= MAX_FILENAME_LENGTH) {
-            len = MAX_FILENAME_LENGTH - 1; // Sicherstellen, dass Platz für '\0' ist
+            len = MAX_FILENAME_LENGTH - 1;
         }
 
-        // Vektorinhalt kopieren
         for (size_t k = 0; k < len; ++k) {
             filename_buffer[k] = input_vec[k];
         }
-        
-        // Null-Terminierung hinzufügen
+
         filename_buffer[len] = '\0'; 
 
-        // 3. k_open_file mit dem erstellten String aufrufen
-        // Die Funktion gibt den Inhalt direkt auf dem Bildschirm aus.
         this->k_open_file(filename_buffer);
     }
 }

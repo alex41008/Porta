@@ -1,13 +1,12 @@
+#ifndef SYS_MEM_H
+#define SYS_MEM_H
+
 #include <stdint.h>
 #include <stddef.h>
-// HINWEIS: Hier KEIN #include "sys_io.h" oder andere I/O-Header, um Konflikte zu vermeiden.
 
-// 1. GLOBALE VARIABLEN: DEFINITION (KEIN extern)
-inline alignas(16) char memory_pool[1024 * 1024]; // 1MB pool (Definiert HIER)
+alignas(16) char memory_pool[1024 * 1024]; // 1MB
 inline size_t pool_index = 0;
 
-// 2. OPERATOREN: Definition (Inline wird ignoriert, da es die einzige Definition ist)
-// Hinzufügen von noexcept zu new/delete
 inline void *operator new[](size_t size) noexcept 
 {
     if (pool_index + size > sizeof(memory_pool))
@@ -21,7 +20,7 @@ inline void *operator new[](size_t size) noexcept
 
 inline void operator delete[](void *ptr) noexcept
 {
-    // Implementierung (ist leer, wie Sie es haben)
+    
 }
 
 struct multiboot_info
@@ -87,7 +86,7 @@ inline uint32_t get_total_ram_mb(multiboot_info *mbi)
         {
             if (entry->type == 1)
             {
-                mem_mb += (entry->len / 1048576); // BYTE TO MB CONVERSION
+                mem_mb += (entry->len / 1048576); // BYTE TO MB
             }
             entry = (mmap_entry *)((uint32_t)entry + entry->size + 4);
         }
@@ -95,3 +94,5 @@ inline uint32_t get_total_ram_mb(multiboot_info *mbi)
 
     return mem_mb;
 }
+
+#endif // SYS_MEM_H
