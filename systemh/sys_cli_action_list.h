@@ -1,6 +1,8 @@
 #include "sys_cpu.h"
 #include "sys_ata_driver.h"
 #include "sys_fat32_driver.h"
+#include "sys_interrupts.h"
+#include "sys_idt.h"
 //#include "sys_vga_screen.h"
 
 uint32_t g_partition_lba = 0;
@@ -10,7 +12,7 @@ uint32_t g_fat_size = 0;
 uint32_t g_root_dir_lba = 0;
 
 struct kernel_program {
-public:
+    public:
     void k_set_text_mode_font_height() {
         const uint16_t CRTC_INDEX = 0x3D4;
         const uint16_t CRTC_DATA = 0x3D5;
@@ -102,7 +104,7 @@ void __k_init_filesystem__() {
                 print_char(entries[i].ext[j]);
             }
         }
-
+        
         print_string(" (Size: ");
         print_int(entries[i].file_size);
         print_string(" Bytes)\n");
@@ -241,11 +243,6 @@ void k_show_files(const vector<char>& a) {
             k_init_cli();
         }
     }
-    void k_init_cli() {
-        k_print_info();
-        k_set_text_mode_font_height();
-        //__k_init_filesystem__();
-    }
     void k_enter_gui(const vector<char>& a) {
     if (str_cmp_literal(a, "gui")) {
         print_string("Switched to VGA Mode 13h (320x200). CLI functions are now broken.\n");
@@ -299,5 +296,16 @@ void k_show_files(const vector<char>& a) {
         this->k_open_file(filename_buffer);
     }
 }
+    void k_init_cli() {
+        k_print_info();
+        k_set_text_mode_font_height();
+        pic_remap();
+        pit_set_frequency(100);
+        idt_init();
+        outb(PIC1_DATA, 0xFC);
+        outb(PIC2_DATA, 0xFF); 
+        asm volatile("sti");
+        //__k_init_filesystem__();
+    }
 
 };

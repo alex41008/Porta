@@ -88,31 +88,26 @@ sudo mount -o loop,offset=512 "$DISK_IMG" "$MOUNT_POINT" || {
 echo "  -> Copying files..."
 sudo cp -r user_files/* "$MOUNT_POINT/"
 
-# Unmount und Bereinigung
 echo "  -> Unmounting and cleaning up..."
 sudo umount "$MOUNT_POINT"
 
-# --- 5. Kernel kompilieren und linken ---
 echo "Compiling boot.asm..."
 nasm -f elf32 boot.asm -o build/boot.o
 
-# ... (Rest des Kompilierungs- und QEMU-Codes bleibt unverändert) ...
+echo "Compiling sys_asm_funcs.asm..."
+nasm -f elf32 sys_asm_funcs.asm -o build/sys_asm_funcs.o # <-- HINZUFÜGEN
 
-# Compile the kernel
 echo "Compiling kernel.cpp..."
 g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c kernel.cpp -o build/kernel.o
 
-# Link the kernel
 echo "Linking kernel..."
-ld -m elf_i386 -T linker.ld -o build/kernel.bin build/boot.o build/kernel.o
+ld -m elf_i386 -T linker.ld -o build/kernel.bin build/boot.o build/kernel.o build/sys_asm_funcs.o
 
-# Check if kernel.bin exists and has size greater than 0
 if [ ! -s build/kernel.bin ]; then
     echo "Error: kernel.bin is empty or does not exist."
     exit 1
 fi
 
-# Create a bootable ISO
 echo "Creating bootable ISO..."
 mkdir -p build/iso/boot/grub
 cp build/kernel.bin build/iso/boot/
@@ -130,7 +125,7 @@ grub-mkrescue -o build/cos.iso build/iso
 echo -en '\x55\xAA' | dd of="$DISK_IMG" bs=1 seek=510 count=2 conv=notrunc
 
 echo -en '\x55\xAA' | dd of="$DISK_IMG" bs=1 seek=$((512 + 510)) count=2 conv=notrunc
-# Run the OS in QEMU
+
 echo "Starting QEMU with IDE drive..."
 qemu-system-i386 \
     -boot d \

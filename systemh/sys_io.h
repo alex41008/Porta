@@ -20,5 +20,9 @@ extern "C" {
         asm volatile("outw %0, %1" : : "a"(val), "Nd"(port));
     }
 
+    inline void io_wait() {
+        asm volatile("outb %%al, $0x80" : : "a"(0));
+    }
+
 }
 #endif

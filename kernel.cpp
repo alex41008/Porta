@@ -9,6 +9,8 @@
 #include "systemh/sys_input_output.h"
 #include "systemh/sys_cli_action_list.h"
 
+uint64_t g_timer_ticks = 0;
+uint64_t last_tick = 0;
 kernel_program krnl;
 
 extern "C" void kernel_main(multiboot_info *mbi)
@@ -29,5 +31,17 @@ extern "C" void kernel_main(multiboot_info *mbi)
         krnl.k_disktest(i);
         krnl.k_readmbr(i);
         krnl.k_info(i, mbi);
+        if (g_timer_ticks != last_tick) {
+        asm volatile("cli"); 
+        
+        cursor_x = 0;
+        cursor_y = 5;
+        print_string("Ticks: ");
+        print_int(g_timer_ticks, VGA_COLOR_LIGHT_GREY);
+        last_tick = g_timer_ticks;
+        
+        asm volatile("sti"); 
     }
+    }
+    
 }
