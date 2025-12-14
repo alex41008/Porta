@@ -1,3 +1,6 @@
+#ifndef SYS_DEFINITION_LIST_H 
+#define SYS_DEFINITION_LIST_H
+
 enum vga_color
 {
     VGA_COLOR_BLACK = 0,
@@ -29,7 +32,7 @@ enum vga_color
 const uint16_t VGA_WIDTH = 80;
 const uint16_t VGA_HEIGHT = 25;
 const uint16_t VGA_COLOR = VGA_COLOR_LIGHT_GREY;
-int vga_mode = 0;
+extern int vga_mode;
 
 static const char scancode_ascii_normal[] = {
     0, 0, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', 0, 0,
@@ -42,3 +45,5 @@ static const char scancode_ascii_shifted[] = {
     'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n', 0,
     'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', 0, '|',
     'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0, '*', 0, ' ', 0, 0, 0, 0, 0, 0};
+
+#endif // SYS_DEFINITION_LIST_H

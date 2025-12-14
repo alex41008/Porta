@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 #include "sys_io.h"
+//#include <cstddef>         
+#include "sys_definition_list.h"
+#include "sys_vga_screen.h" 
+#include "sys_vec.h"
+
+static bool global_left_shift_pressed = false;
+static bool global_right_shift_pressed = false;
 
 char scancode_to_ascii(uint8_t scancode, bool shift_pressed)
 {
@@ -115,9 +122,12 @@ void print_hex_8(uint32_t value) {
 
 uint8_t scankey()
 {
-    while (true)
-        if (inb(0x64) & 0x1)
-            return inb(0x60);
+    if (kbd_read_ptr != kbd_write_ptr) {
+        uint8_t scancode = kbd_buffer[kbd_read_ptr];
+        kbd_read_ptr = (kbd_read_ptr + 1) % KBD_BUFFER_SIZE;
+        return scancode;
+    }
+    return 0;
 }
 
 bool str_cmp(vector<char>&a, vector<char>&b) {
@@ -182,84 +192,69 @@ void trim_vec(vector<char>& v) {
     }
     }
 
-void input(vector<char> &v, int color = VGA_COLOR_LIGHT_GREY)
-{
+    void input(vector<char> &v, int color = VGA_COLOR_LIGHT_GREY) {
+    print_char('_', true, VGA_COLOR_DARK_GREY);
 
-    bool left_shift_pressed = false;
-    bool right_shift_pressed = false;
+    auto scancode = scankey(); 
 
-    size_t visual_cursor_x = 0;
-    size_t visual_cursor_y = cursor_y;
-    vector<vector<char>> display_lines;
-    vector<size_t> word_starts; 
-
-    display_lines.push_back(vector<char>());
-
-    while (true)
-    {
-        print_char('_', true, VGA_COLOR_DARK_GREY);
-        auto scancode = scankey();
-
-        switch (scancode)
-        {
-        case ENTER:
-            print_char(' ', true);
-            return;
-
-        case SHIFT_PRESSED_LEFT:
-            left_shift_pressed = true;
-            break;
-
-        case SHIFT_RELEASED_LEFT:
-            left_shift_pressed = false;
-            break;
-
-        case SHIFT_PRESSED_RIGHT:
-            right_shift_pressed = true;
-            break;
-
-        case SHIFT_RELEASED_RIGHT:
-            right_shift_pressed = false;
-            break;
-
-        case BACKSPACE:
-            if (!v.empty())
-            {
-                v.pop_back();
-                print_char(' ', true);
-
-                if (cursor_x > 0)
-                {
-                    cursor_x--;
-                }
-                else if (cursor_y > 0)
-                {
-                    cursor_y--;
-                    cursor_x = VGA_WIDTH - 1;
-                }
-
-                uint16_t position = cursor_y * VGA_WIDTH + cursor_x;
-                vga_buffer[position] = (color << 8) | ' ';
-            }
-            break;
-
-        default:
-            if (scancode & 0x80) {
-                break; 
-            }
-            if (scancode < KEY_LIMIT)
-            {
-                bool shift_pressed = left_shift_pressed || right_shift_pressed;
-                char c = scancode_to_ascii(scancode, shift_pressed);
-                if (c)
-                {
-                    v.push_back(c);
-                    print_char(c, false);
-                }
-            }
-            break;
-        }
+    if (scancode == 0) { 
+        return; 
     }
+
+    switch (scancode)
+    {
+    case ENTER:
+        print_char(' ', true);
+        return; 
+
+    case SHIFT_PRESSED_LEFT:
+        global_left_shift_pressed = true;
+        break;
+
+    case SHIFT_RELEASED_LEFT:
+        global_left_shift_pressed = false;
+        break;
+        
+    case SHIFT_PRESSED_RIGHT:
+        global_right_shift_pressed = true;
+        break;
+
+    case SHIFT_RELEASED_RIGHT:
+        global_right_shift_pressed = false;
+        break;
+
+    case BACKSPACE:
+        if (!v.empty())
+        {
+            v.pop_back();
+            print_char(' ', true);
+            if (cursor_x > 0) {
+                cursor_x--;
+            } else if (cursor_y > 0) {
+                cursor_y--;
+                cursor_x = VGA_WIDTH - 1;
+            }
+            uint16_t position = cursor_y * VGA_WIDTH + cursor_x;
+            vga_buffer[position] = (color << 8) | ' ';
+        }
+        break;
+
+    default:
+        if (!(scancode & 0x80) && scancode < KEY_LIMIT) 
+        {
+            bool shift_pressed = global_left_shift_pressed || global_right_shift_pressed;
+            char c = scancode_to_ascii(scancode, shift_pressed);
+            if (c)
+            {
+                v.push_back(c);
+                print_char(c, false);
+            }
+        }
+        break;
+    }
+
+    return;
+    
 }
 
 #endif // SYS_INPUT_OUTPUT_H

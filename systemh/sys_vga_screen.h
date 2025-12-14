@@ -1,7 +1,10 @@
-volatile uint16_t *vga_buffer = (uint16_t *)0xB8000;
-uint16_t cursor_x, cursor_y;
+#ifndef SYS_VGA_SCREEN_H
+#define SYS_VGA_SCREEN_H
 
-void scroll_screen(volatile uint16_t *vga_buffer)
+extern volatile uint16_t *vga_buffer;
+extern uint16_t cursor_x, cursor_y;
+
+inline void scroll_screen(volatile uint16_t *vga_buffer)
 {
     for (uint16_t y = 0; y < VGA_HEIGHT - 1; y++)
     {
@@ -16,7 +19,7 @@ void scroll_screen(volatile uint16_t *vga_buffer)
     }
 }
 
-void cls()
+inline void cls()
 {
     const uint16_t color_attribute = (VGA_COLOR_BLACK << 4) | VGA_COLOR_LIGHT_GREY;
 
@@ -29,3 +32,5 @@ void cls()
     cursor_x = 0;
     cursor_y = 0;
 }
+
+#endif // SYS_VGA_SCREEN_H

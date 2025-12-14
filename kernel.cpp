@@ -11,6 +11,9 @@
 
 uint64_t g_timer_ticks = 0;
 uint64_t last_tick = 0;
+volatile uint16_t *vga_buffer = (uint16_t *)0xB8000;
+uint16_t cursor_x = 0;
+uint16_t cursor_y = 0;
 kernel_program krnl;
 
 extern "C" void kernel_main(multiboot_info *mbi)
@@ -20,6 +23,8 @@ extern "C" void kernel_main(multiboot_info *mbi)
     
     while (true)
     {
+
+        asm volatile("hlt");
         vector<char> i;
         krnl.k_input(i);
         krnl.k_clear(i);
@@ -32,16 +37,16 @@ extern "C" void kernel_main(multiboot_info *mbi)
         krnl.k_readmbr(i);
         krnl.k_info(i, mbi);
         if (g_timer_ticks != last_tick) {
-        asm volatile("cli"); 
-        
-        cursor_x = 0;
-        cursor_y = 5;
-        print_string("Ticks: ");
-        print_int(g_timer_ticks, VGA_COLOR_LIGHT_GREY);
-        last_tick = g_timer_ticks;
-        
-        asm volatile("sti"); 
-    }
+            asm volatile("cli"); 
+            
+            cursor_x = 0;
+            cursor_y = 5;
+            print_string("Ticks: ");
+            print_int(g_timer_ticks, VGA_COLOR_LIGHT_GREY);
+            last_tick = g_timer_ticks;
+            
+            asm volatile("sti"); 
+        }
     }
     
 }

@@ -40,18 +40,22 @@ inline void idt_init() {
     idt_ptr.limit = (sizeof(IDTEntry) * IDT_ENTRIES) - 1;
     idt_ptr.base = (uint32_t)&idt;
 
-    // 1. Initialisiere alle 256 Einträge (mit dem SICHEREN default_interrupt_handler)
+    // ALLE 256 Einträge MÜSSEN auf einen gültigen Handler zeigen (default_interrupt_handler)
+    extern void default_interrupt_handler(); // Muss in asm_funcs.asm definiert sein (pusha/popa/iret)
+
     for (int i = 0; i < IDT_ENTRIES; i++) {
-        idt_set_gate(i, (uint32_t)&default_interrupt_handler, KERNEL_CS, 0x8E); // MUSS default_interrupt_handler sein!
+        // Zuerst alle Einträge auf den sicheren Standard-Handler setzen (NICHT 0)
+        idt_set_gate(i, (uint32_t)&default_interrupt_handler, KERNEL_CS, 0x8E); 
     }
 
-    // 2. Überschreibe Timer (INT 32)
+    // Überschreibe Timer (INT 32)
     idt_set_gate(PIC_MASTER_OFFSET + 0, (uint32_t)&timer_handler_asm, KERNEL_CS, 0x8E);
     
-    // 3. Überschreibe Tastatur (INT 33)
+    // Überschreibe Tastatur (INT 33)
     idt_set_gate(PIC_MASTER_OFFSET + 1, (uint32_t)&irq1_handler_asm, KERNEL_CS, 0x8E);
 
-    // 4. Lade die IDT nur EINMAL und am Ende
+    // Lade die IDT nur EINMAL und am Ende
+    extern void idt_flush(uint32_t);
     idt_flush((uint32_t)&idt_ptr);
 }
 

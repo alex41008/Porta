@@ -227,7 +227,7 @@ void k_show_files(const vector<char>& a) {
     }
 }
     void k_print_info() {
-        print_string("Spectrum 1.0\n", VGA_COLOR_LIGHT_RED);
+        print_string("Porta 1.0\n", VGA_COLOR_CYAN);
         print_string("Operating System (Kernel CLI) - Alexander Slama\n");
         print_string("-----------------------------------------------\n");
     }
@@ -297,15 +297,29 @@ void k_show_files(const vector<char>& a) {
     }
 }
     void k_init_cli() {
-        k_print_info();
-        k_set_text_mode_font_height();
-        pic_remap();
-        pit_set_frequency(100);
-        idt_init();
-        outb(PIC1_DATA, 0xFC);
-        outb(PIC2_DATA, 0xFF); 
-        asm volatile("sti");
-        //__k_init_filesystem__();
-    }
+    k_print_info();
+    k_set_text_mode_font_height();
+    pic_remap();
+    pit_set_frequency(100);
+    idt_init(); // <-- Wichtig: Jetzt mit reparierter IDT-Logik
+
+    // PS/2 Tastatur Controller Initialisierung (wie zuvor besprochen)
+    outb(0x64, 0xAD); // Deaktiviere
+    outb(0x64, 0xA7);
+    while (inb(0x64) & 0x01) { inb(0x60); } // Leere Puffer
+    outb(0x64, 0x20); // Lese Status
+    uint8_t status = inb(0x60);
+    status |= 0x01; // Aktiviere Interrupts
+    outb(0x64, 0x60); // Schreibe Status
+    outb(0x60, status);
+    outb(0x64, 0xAE); // Aktiviere Port 1
+    
+    // PIC Masken
+    outb(PIC1_DATA, 0xFC); // Timer & Tastatur erlaubt
+    outb(PIC2_DATA, 0xFF); 
+
+    asm volatile("sti"); // <-- Wichtig: Globale Interrupts aktivieren
+    //__k_init_filesystem__();
+}
 
 };

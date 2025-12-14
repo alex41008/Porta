@@ -1,3 +1,6 @@
+#ifndef SYS_VEC_H 
+#define SYS_VEC_H
+
 using size_t = unsigned int;
 
 inline void *operator new(size_t, void *p) noexcept { return p; }
@@ -232,3 +235,5 @@ public:
         return arr + current_size;
     }
 };
+
+#endif // SYS_VEC_H
