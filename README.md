@@ -1,4 +1,5 @@
-Porta - 1.0
+# Porta - 1.0
+
 Welcome to Porta, a 32-bit operating system that’s currently in its extremely early baby phase. This project is a personal side endeavor, created out of curiosity and a passion for low-level programming.
 
 Disclaimer:
