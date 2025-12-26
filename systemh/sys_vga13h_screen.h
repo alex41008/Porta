@@ -10,14 +10,14 @@
 
 #define FRAMEBUFFER_ADDR 0xA0000
 
-volatile uint8_t* g_vga_framebuffer = (volatile uint8_t*)FRAMEBUFFER_ADDR;
+inline volatile uint8_t* g_vga_framebuffer = (volatile uint8_t*)FRAMEBUFFER_ADDR;
 
-static void vga_set_register(uint16_t port, uint8_t index, uint8_t value) {
+inline static void vga_set_register(uint16_t port, uint8_t index, uint8_t value) {
     outb(port, index);
     outb(port + 1, value);
 }
 
-void put_pixel(int x, int y, uint8_t color_index) {
+inline void put_pixel(int x, int y, uint8_t color_index) {
     
     if (x >= VGA_WIDTH_13H || y >= VGA_HEIGHT_13H || x < 0 || y < 0) {
         return; 
@@ -28,7 +28,13 @@ void put_pixel(int x, int y, uint8_t color_index) {
     g_vga_framebuffer[offset] = color_index;
 }
 
-void vga_set_mode_13h() {
+inline void clear_screen() {
+    for (int i = 0; i < VGA_WIDTH_13H * VGA_HEIGHT_13H; i++) {
+        g_vga_framebuffer[i] = 0; 
+    }
+}
+
+inline void vga_set_mode_13h() {
     
     vga_set_register(0x3D4, 0x11, 0x00); 
 
@@ -51,7 +57,12 @@ void vga_set_mode_13h() {
     vga_set_register(0x3C4, 0x04, 0x0E);
 
     vga_set_register(0x3CE, 0x05, 0x00); 
-    vga_set_register(0x3CE, 0x06, 0x05);
+    vga_set_register(0x3C4, 0x04, 0x0E); 
+
+    vga_set_register(0x3CE, 0x05, 0x40); 
+    vga_set_register(0x3CE, 0x06, 0x05); 
+
+    vga_set_register(0x3D4, 0x17, 0xA3);
 
     outb(0x3C2, 0xE3); 
 

@@ -11,19 +11,36 @@
 static bool global_left_shift_pressed = false;
 static bool global_right_shift_pressed = false;
 
-char scancode_to_ascii(uint8_t scancode, bool shift_pressed)
+inline char scancode_to_ascii(uint8_t scancode, bool shift_pressed)
 {
     if (scancode >= 58)
         return 0;
     return shift_pressed ? scancode_ascii_shifted[scancode] : scancode_ascii_normal[scancode];
 }
 
-void print_char(char c, bool inplace = false, int color = VGA_COLOR_LIGHT_GREY)
+inline char scancode_to_ascii(uint8_t scancode) {
+    if (scancode > 58) return 0;
+    return scancode_ascii_normal[scancode];
+}
+
+inline void print_char(char c, bool inplace = false, int color = VGA_COLOR_LIGHT_GREY)
 {
     if (c == '\n')
     {
         cursor_x = 0;
         cursor_y++;
+    }
+    else if (c == '\b')
+    {
+        if (cursor_x > 0)
+        {
+            cursor_x--;
+        }
+        else if (cursor_y > 0)
+        {
+            cursor_y--;
+            cursor_x = VGA_WIDTH - 1;
+        }
     }
     else
     {
@@ -37,17 +54,12 @@ void print_char(char c, bool inplace = false, int color = VGA_COLOR_LIGHT_GREY)
             {
                 cursor_x = 0;
                 cursor_y++;
-                if (cursor_y >= VGA_HEIGHT)
-                {
-                    scroll_screen(vga_buffer);
-                    cursor_y = VGA_HEIGHT - 1;
-                }
             }
         }
     }
 }
 
-void print_string(const char *str, int color = VGA_COLOR_LIGHT_GREY)
+inline void print_string(const char *str, int color = VGA_COLOR_LIGHT_GREY)
 {
     for (int i = 0; str[i] != '\0'; ++i)
     {
@@ -55,7 +67,7 @@ void print_string(const char *str, int color = VGA_COLOR_LIGHT_GREY)
     }
 }
 
-void print_vector(vector<char> &v, int color = VGA_COLOR_LIGHT_GREY)
+inline void print_vector(vector<char> &v, int color = VGA_COLOR_LIGHT_GREY)
 {
     for (auto &c : v)
     {
@@ -63,7 +75,7 @@ void print_vector(vector<char> &v, int color = VGA_COLOR_LIGHT_GREY)
     }
 }
 
-void print_int(int x, int color = VGA_COLOR_LIGHT_GREY)
+inline void print_int(int x, int color = VGA_COLOR_LIGHT_GREY)
 {
     int digits = 1;
     int a = x;
@@ -83,14 +95,14 @@ void print_int(int x, int color = VGA_COLOR_LIGHT_GREY)
 
     cursor_x += digits + 1;
 }
-char to_hex_char(uint8_t nibble) {
+inline char to_hex_char(uint8_t nibble) {
     if (nibble < 10) {
         return '0' + nibble;
     } else {
         return 'A' + (nibble - 10);
     }
 }
-void print_hex_32(uint32_t value) {
+inline void print_hex_32(uint32_t value) {
     
     bool non_zero_printed = false;
 
@@ -103,14 +115,14 @@ void print_hex_32(uint32_t value) {
     }
 }
 
-void print_hex_16(uint16_t value) {
+inline void print_hex_16(uint16_t value) {
     for (int i = 3; i >= 0; --i) {
         uint8_t nibble = (value >> (i * 4)) & 0xF;
         print_char(to_hex_char(nibble));
     }
 }
 
-void print_hex_8(uint32_t value) {
+inline void print_hex_8(uint32_t value) {
     auto to_hex_char = [](uint8_t nibble) -> char {
         if (nibble < 10) {
             return '0' + nibble;
@@ -120,17 +132,34 @@ void print_hex_8(uint32_t value) {
     };
 }
 
-uint8_t scankey()
+inline uint8_t scankey()
 {
-    if (kbd_read_ptr != kbd_write_ptr) {
-        uint8_t scancode = kbd_buffer[kbd_read_ptr];
-        kbd_read_ptr = (kbd_read_ptr + 1) % KBD_BUFFER_SIZE;
+
+    asm volatile("" ::: "memory"); 
+
+    volatile uint16_t* r_ptr = (volatile uint16_t*)&kbd_read_ptr;
+    volatile uint16_t* w_ptr = (volatile uint16_t*)&kbd_write_ptr;
+
+    if (*r_ptr != *w_ptr) {
+        uint8_t scancode = kbd_buffer[*r_ptr];
+        *r_ptr = (*r_ptr + 1) % KBD_BUFFER_SIZE;
         return scancode;
     }
     return 0;
 }
 
-bool str_cmp(vector<char>&a, vector<char>&b) {
+inline char get_key_blocked() {
+    uint8_t scancode = 0;
+
+    while ((scancode = scankey()) == 0) {
+        //asm volatile("hlt"); 
+        asm volatile("pause"); 
+    }
+
+    return scancode_to_ascii(scancode, false); 
+}
+
+inline bool str_cmp(vector<char>&a, vector<char>&b) {
     if (a.size() != b.size()) {
         return false;
     }
@@ -143,7 +172,7 @@ bool str_cmp(vector<char>&a, vector<char>&b) {
 
     return true;
 }
-bool str_cmp_literal(const vector<char>& a, const char* literal) {
+inline bool str_cmp_literal(const vector<char>& a, const char* literal) {
     size_t i = 0;
     
     while (i < a.size() && literal[i] != '\0') {
@@ -155,14 +184,22 @@ bool str_cmp_literal(const vector<char>& a, const char* literal) {
     
     return (i == a.size() && literal[i] == '\0');
 }
-void flush_keyboard_buffer() {
+inline bool str_cmp(const char* input, const char* literal) {
+    int i = 0;
+    while (input[i] != '\0' && literal[i] != '\0') {
+        if (input[i] != literal[i]) return false;
+        i++;
+    }
+    return (input[i] == '\0' && literal[i] == '\0');
+}
+inline void flush_keyboard_buffer() {
     uint8_t status;
     while (inb(0x64) & 0x1) {
         inb(0x60); 
     }
 }
 
-void trim_vec(vector<char>& v) {
+inline void trim_vec(vector<char>& v) {
         if (v.empty()) return;
 
     size_t start = 0;
@@ -192,7 +229,7 @@ void trim_vec(vector<char>& v) {
     }
     }
 
-    void input(vector<char> &v, int color = VGA_COLOR_LIGHT_GREY) {
+    inline void input(vector<char> &v, int color = VGA_COLOR_LIGHT_GREY) {
     print_char('_', true, VGA_COLOR_DARK_GREY);
 
     auto scancode = scankey(); 

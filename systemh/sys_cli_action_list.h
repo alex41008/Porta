@@ -315,8 +315,8 @@ void k_show_files(const vector<char>& a) {
     outb(0x64, 0xAE); // Aktiviere Port 1
     
     // PIC Masken
-    outb(PIC1_DATA, 0xFC); // Timer & Tastatur erlaubt
-    outb(PIC2_DATA, 0xFF); 
+    outb(PIC1_DATA, 0xF8); // 11111000 -> Timer(0), Kbd(1), Cascade(2) frei
+    outb(PIC2_DATA, 0xEF); // 11101111 -> Maus(12) frei
 
     asm volatile("sti"); // <-- Wichtig: Globale Interrupts aktivieren
     //__k_init_filesystem__();

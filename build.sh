@@ -47,10 +47,6 @@ echo "Copying user files from 'user_files/' to disk image via loop device..."
 
 mkdir -p user_files
 
-if [ -z "$(ls -A user_files 2>/dev/null)" ]; then
-    echo "Dies ist eine Beispieldatei. Sie können diese ersetzen oder löschen." > user_files/SAMPLE.TXT
-fi
-
 MOUNT_POINT="build/mnt"
 mkdir -p "$MOUNT_POINT"
 
@@ -77,11 +73,32 @@ nasm -f elf32 sys_asm_funcs.asm -o build/sys_asm_funcs.o
 echo "Compiling sys_input.cpp..."
 g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemimpl/sys_input.cpp -o build/sys_input.o
 
+echo "Compiling sys_cli_task.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemimpl/sys_cli_task.cpp -o build/sys_cli_task.o
+
+echo "Compiling sys_process.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemprocess/sys_process.cpp -o build/sys_process.o
+
+echo "Compiling sys_clock_task.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemimpl/sys_clock_task.cpp -o build/sys_clock_task.o
+
+echo "Compiling sys_scheduler.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemprocess/sys_scheduler.cpp -o build/sys_scheduler.o
+
+echo "Compiling sys_window.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemprocess/sys_window.cpp -o build/sys_window.o
+
+echo "Compiling sys_font.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemimpl/sys_font.cpp -o build/sys_font.o
+
+echo "Compiling sys_ps2_mouse_driver.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemimpl/sys_ps2_mouse_driver.cpp -o build/sys_ps2_mouse_driver.o
+
 echo "Compiling kernel.cpp..."
 g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c kernel.cpp -o build/kernel.o
 
 echo "Linking kernel..."
-ld -m elf_i386 -T linker.ld -o build/kernel.bin build/boot.o build/kernel.o build/sys_asm_funcs.o build/sys_input.o
+ld -m elf_i386 -T linker.ld -o build/kernel.bin build/boot.o build/kernel.o build/sys_asm_funcs.o build/sys_input.o build/sys_cli_task.o build/sys_process.o build/sys_clock_task.o build/sys_scheduler.o build/sys_font.o build/sys_window.o build/sys_ps2_mouse_driver.o
 
 if [ ! -s build/kernel.bin ]; then
     echo "Error: kernel.bin is empty or does not exist."

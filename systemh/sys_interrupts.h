@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "sys_io.h" 
+#include "sys_ps2_mouse_driver.h"
 
 #define PIC1_COMMAND 0x20
 #define PIC1_DATA 0x21
@@ -19,9 +20,9 @@
 
 inline void pic_send_eoi(uint8_t irq_number) {
     if (irq_number >= 8) {
-        outb(PIC2_COMMAND, PIC_EOI);
+        outb(0xA0, 0x20); 
     }
-    outb(PIC1_COMMAND, PIC_EOI);
+    outb(0x20, 0x20);   
 }
 
 inline void pic_remap(void) {
@@ -48,8 +49,8 @@ inline void pic_remap(void) {
     outb(PIC2_DATA, ICW4_8086);
     io_wait();
 
-    outb(PIC1_DATA, a1); 
-    outb(PIC2_DATA, a2); 
+    outb(PIC1_DATA, 0xF8); // 0, 1, 2 frei
+    outb(PIC2_DATA, 0xEF); // 12 frei
 }
 
 #define PIT_DATA 0x40
@@ -76,9 +77,52 @@ extern "C" uint64_t g_timer_ticks;
 
 extern "C" void timer_handler_c() {
     g_timer_ticks++;
+    //pic_send_eoi(0);
 
-    //pic_send_eoi(0); 
+}
+extern "C" void keyboard_handler_c() {
+    uint8_t status = inb(0x64);
 
+    // Wir lesen ALLES aus, was gerade im Hardware-Puffer liegt
+    while (status & 0x01) {
+        uint8_t data = inb(0x60);
+
+        if (status & 0x20) {
+            // Hoppla! Das ist ein Maus-Byte, obwohl wir im Keyboard-IRQ sind
+            PS2Mouse::process_byte(data);
+        } else {
+            // Echtes Tastatur-Byte
+            kbd_buffer_push(data);
+        }
+        status = inb(0x64); // Status neu prüfen
+    }
+
+    pic_send_eoi(1);
+}
+
+extern "C" void mouse_handler_c() {
+    PS2Mouse::handle_interrupt();
+    pic_send_eoi(12);
+}
+
+extern "C" void ps2_dispatcher_c() {
+    uint8_t status = inb(0x64);
+    
+    // Solange der Output-Buffer des 8042 voll ist
+    while (status & 0x01) {
+        uint8_t data = inb(0x60);
+        
+        if (status & 0x20) {
+            // Bit 5 gesetzt -> Es ist definitiv ein MAUS-Byte
+            PS2Mouse::process_byte(data);
+        } else {
+            // Bit 5 nicht gesetzt -> Es ist ein TASTATUR-Byte
+            kbd_buffer_push(data);
+        }
+        
+        // Status erneut lesen, falls mehrere Bytes warten
+        status = inb(0x64);
+    }
 }
 
 #endif // SYS_INTERRUPTS_H

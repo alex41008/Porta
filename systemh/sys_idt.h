@@ -35,26 +35,24 @@ extern "C" void timer_handler_asm();
 extern "C" void idt_flush(uint32_t);
 extern "C" void irq1_handler_asm();
 extern "C" void default_interrupt_handler();
+extern "C" void irq12_handler_asm();
+extern "C" void keyboard_handler_c();
+extern "C" void ps2_dispatcher_c();
 
 inline void idt_init() {
     idt_ptr.limit = (sizeof(IDTEntry) * IDT_ENTRIES) - 1;
     idt_ptr.base = (uint32_t)&idt;
 
-    // ALLE 256 Einträge MÜSSEN auf einen gültigen Handler zeigen (default_interrupt_handler)
-    extern void default_interrupt_handler(); // Muss in asm_funcs.asm definiert sein (pusha/popa/iret)
+    extern void default_interrupt_handler();
 
     for (int i = 0; i < IDT_ENTRIES; i++) {
-        // Zuerst alle Einträge auf den sicheren Standard-Handler setzen (NICHT 0)
         idt_set_gate(i, (uint32_t)&default_interrupt_handler, KERNEL_CS, 0x8E); 
     }
 
-    // Überschreibe Timer (INT 32)
     idt_set_gate(PIC_MASTER_OFFSET + 0, (uint32_t)&timer_handler_asm, KERNEL_CS, 0x8E);
-    
-    // Überschreibe Tastatur (INT 33)
-    idt_set_gate(PIC_MASTER_OFFSET + 1, (uint32_t)&irq1_handler_asm, KERNEL_CS, 0x8E);
+    idt_set_gate(0x2C, (uint32_t)&irq12_handler_asm, KERNEL_CS, 0x8E);
+    idt_set_gate(0x21, (uint32_t)irq1_handler_asm, 0x08, 0x8E);
 
-    // Lade die IDT nur EINMAL und am Ende
     extern void idt_flush(uint32_t);
     idt_flush((uint32_t)&idt_ptr);
 }
