@@ -10,14 +10,11 @@ Current State:
     Basic 32-bit kernel
     Minimal hardware interaction
     Extremely limited functionality
-    No user interface or applications
+    Basic VGA Mode 13h GUI
 
 Goals for the Future:
 
     Improve stability and functionality
     Add basic system utilities
     Add a working task and executable system
-    Make the filesystem (FAT32) work properly within a CLI-task
-
-How to Contribute:
-If you’re interested in contributing or just want to follow the development, feel free to check out the project repository and share your thoughts.
+    Make an OS
