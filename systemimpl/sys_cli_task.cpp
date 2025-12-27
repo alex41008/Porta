@@ -85,7 +85,6 @@ void CLI_Task::execute() {
         int mx = PS2Mouse::get_x();
         int my = PS2Mouse::get_y();
 
-        if (mx != last_mx || my != last_my || dragged_window != nullptr || needs_redraw) {
         
         draw_pattern_background();
         
@@ -97,21 +96,25 @@ void CLI_Task::execute() {
 
         draw_cursor(mx, my, last_mx, last_my, CURSOR_COLOR);
         
+        vga_flip();
         last_mx = mx;
         last_my = my;
         needs_redraw = false;
-    }
 
 if (PS2Mouse::left_clicked()) {
     if (dragged_window == nullptr) {
         for (int i = window_count - 1; i >= 0; i--) {
             if (windows[i]->is_over_title_bar(mx, my)) {
                 dragged_window = windows[i];
-                offset_x = mx - dragged_window->get_x();
-                offset_y = my - dragged_window->get_y();
-                
-                // TODO: Z-Order
-                break; 
+    
+            for (int j = i; j < window_count - 1; j++) {
+                windows[j] = windows[j + 1];
+            }
+            windows[window_count - 1] = dragged_window;
+    
+            offset_x = mx - dragged_window->get_x();
+            offset_y = my - dragged_window->get_y();
+            break;
             }
         }
     }

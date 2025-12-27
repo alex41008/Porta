@@ -13,23 +13,16 @@
 #define FRAMEBUFFER_ADDR 0xA0000
 
 inline volatile uint8_t* g_vga_framebuffer = (volatile uint8_t*)FRAMEBUFFER_ADDR;
-//uint8_t backbuffer[320 * 200];
+extern uint8_t backbuffer[320 * 200];
 
 inline static void vga_set_register(uint16_t port, uint8_t index, uint8_t value) {
     outb(port, index);
     outb(port + 1, value);
 }
 
-inline void put_pixel(int x, int y, uint8_t color_index) {
-    
-    if (x >= VGA_WIDTH_13H || y >= VGA_HEIGHT_13H || x < 0 || y < 0) {
-        return; 
-    }
+void put_pixel(int x, int y, uint8_t color);
 
-    uint32_t offset = (uint32_t)y * VGA_WIDTH_13H + x;
-
-    g_vga_framebuffer[offset] = color_index;
-}
+void vga_flip();
 
 inline void clear_screen() {
     for (int i = 0; i < VGA_WIDTH_13H * VGA_HEIGHT_13H; i++) {
@@ -55,52 +48,73 @@ inline void draw_pattern_background() {
 }
 
 inline void draw_cursor(int mx, int my, int last_mx, int last_my, int CURSOR_COLOR) {
-            for(int ox = 0; ox <= 10; ox++) {
-                for(int oy = 0; oy <= 16; oy++) {
-                    put_pixel(last_mx + ox, last_my + oy, 0);
-                }
+           
+            put_pixel(mx, my + 1, 0);
+            put_pixel(mx, my + 2, 0);
+            put_pixel(mx, my + 3, 0);
+            put_pixel(mx, my + 4, 0);
+            put_pixel(mx, my + 5, 0);
+            put_pixel(mx, my + 6, 0);
+            put_pixel(mx, my + 7, 0);
+            put_pixel(mx, my + 8, 0);
+            put_pixel(mx, my + 9, 0);
+            put_pixel(mx, my + 10, 0);
+            put_pixel(mx, my + 11, 0);
+            put_pixel(mx, my + 12, 0);
+            put_pixel(mx+1, my + 12, 0);
+            put_pixel(mx+2, my + 11, 0);
+            put_pixel(mx+3, my + 10, 0);
+            put_pixel(mx+4, my + 11, 0);
+            put_pixel(mx+4, my + 12, 0);
+            put_pixel(mx+5, my + 13, 0);
+            put_pixel(mx+5, my + 14, 0);
+            put_pixel(mx+6, my + 15, 0);
+            put_pixel(mx+7, my + 15, 0);
+            put_pixel(mx+8, my + 14, 0);
+            put_pixel(mx+8, my + 13, 0);
+            put_pixel(mx+7, my + 12, 0);
+            put_pixel(mx+7, my + 11, 0);
+            put_pixel(mx+6, my + 10, 0);
+            put_pixel(mx+6, my + 9, 0);
+            put_pixel(mx+7, my + 9, 0);
+            put_pixel(mx+8, my + 9, 0);
+            put_pixel(mx+9, my + 9, 0);
+            put_pixel(mx + 1, my, 0);
+            put_pixel(mx + 2, my + 1, 0);
+            put_pixel(mx + 3, my + 2, 0);
+            put_pixel(mx + 4, my + 3, 0);
+            put_pixel(mx + 5, my + 4, 0);
+            put_pixel(mx + 6, my + 5, 0);
+            put_pixel(mx + 7, my + 6, 0);
+            put_pixel(mx + 8, my + 7, 0);
+            put_pixel(mx + 9, my + 8, 0);
+            for(int i=1; i<12; i++) {
+                put_pixel(mx + 1, my + i, CURSOR_COLOR);
             }
-
-            put_pixel(mx, my + 1, CURSOR_COLOR);
-            put_pixel(mx, my + 2, CURSOR_COLOR);
-            put_pixel(mx, my + 3, CURSOR_COLOR);
-            put_pixel(mx, my + 4, CURSOR_COLOR);
-            put_pixel(mx, my + 5, CURSOR_COLOR);
-            put_pixel(mx, my + 6, CURSOR_COLOR);
-            put_pixel(mx, my + 7, CURSOR_COLOR);
-            put_pixel(mx, my + 8, CURSOR_COLOR);
-            put_pixel(mx, my + 9, CURSOR_COLOR);
-            put_pixel(mx, my + 10, CURSOR_COLOR);
-            put_pixel(mx, my + 11, CURSOR_COLOR);
-            put_pixel(mx, my + 12, CURSOR_COLOR);
-            put_pixel(mx+1, my + 12, CURSOR_COLOR);
-            put_pixel(mx+2, my + 11, CURSOR_COLOR);
-            put_pixel(mx+3, my + 10, CURSOR_COLOR);
-            put_pixel(mx+4, my + 11, CURSOR_COLOR);
-            put_pixel(mx+4, my + 12, CURSOR_COLOR);
-            put_pixel(mx+5, my + 13, CURSOR_COLOR);
-            put_pixel(mx+5, my + 14, CURSOR_COLOR);
-            put_pixel(mx+6, my + 15, CURSOR_COLOR);
-            put_pixel(mx+7, my + 15, CURSOR_COLOR);
-            put_pixel(mx+8, my + 14, CURSOR_COLOR);
-            put_pixel(mx+8, my + 13, CURSOR_COLOR);
-            put_pixel(mx+7, my + 12, CURSOR_COLOR);
-            put_pixel(mx+7, my + 11, CURSOR_COLOR);
-            put_pixel(mx+6, my + 10, CURSOR_COLOR);
-            put_pixel(mx+6, my + 9, CURSOR_COLOR);
-            put_pixel(mx+7, my + 9, CURSOR_COLOR);
-            put_pixel(mx+8, my + 9, CURSOR_COLOR);
-            put_pixel(mx+9, my + 9, CURSOR_COLOR);
-            put_pixel(mx + 1, my, CURSOR_COLOR);
-            put_pixel(mx + 2, my + 1, CURSOR_COLOR);
-            put_pixel(mx + 3, my + 2, CURSOR_COLOR);
-            put_pixel(mx + 4, my + 3, CURSOR_COLOR);
-            put_pixel(mx + 5, my + 4, CURSOR_COLOR);
-            put_pixel(mx + 6, my + 5, CURSOR_COLOR);
-            put_pixel(mx + 7, my + 6, CURSOR_COLOR);
-            put_pixel(mx + 8, my + 7, CURSOR_COLOR);
-            put_pixel(mx + 9, my + 8, CURSOR_COLOR);
-
+            for(int i=1; i<10; i++) {
+                put_pixel(mx + 2, my + i + 1, CURSOR_COLOR);
+            }
+            for(int i=1; i<8; i++) {
+                put_pixel(mx + 3, my + i + 2, CURSOR_COLOR);
+            }
+            for(int i=1; i<8; i++) {
+                put_pixel(mx + 4, my + i + 3, CURSOR_COLOR);
+            }
+            for(int i=1; i<9; i++) {
+                put_pixel(mx + 5, my + i + 4, CURSOR_COLOR);
+            }
+            put_pixel(mx + 6, my + 14, CURSOR_COLOR);
+            put_pixel(mx + 6, my + 13, CURSOR_COLOR);
+            put_pixel(mx + 6, my + 12, CURSOR_COLOR);
+            put_pixel(mx + 6, my + 11, CURSOR_COLOR);
+            put_pixel(mx + 6, my + 8, CURSOR_COLOR);
+            put_pixel(mx + 6, my + 7, CURSOR_COLOR);
+            put_pixel(mx + 6, my + 6, CURSOR_COLOR);
+            put_pixel(mx + 7, my + 7, CURSOR_COLOR);
+            put_pixel(mx + 7, my + 8, CURSOR_COLOR);
+            put_pixel(mx + 8, my + 8, CURSOR_COLOR);
+            put_pixel(mx + 7, my + 13, CURSOR_COLOR);
+            put_pixel(mx + 7, my + 14, CURSOR_COLOR);
             last_mx = mx;
             last_my = my;
 }

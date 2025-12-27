@@ -94,11 +94,14 @@ g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemimpl/sys_font.cpp
 echo "Compiling sys_ps2_mouse_driver.cpp..."
 g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemimpl/sys_ps2_mouse_driver.cpp -o build/sys_ps2_mouse_driver.o
 
+echo "Compiling sys_vga13h_screen.cpp..."
+g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c systemimpl/sys_vga13h_screen.cpp -o build/sys_vga13h_screen.o
+
 echo "Compiling kernel.cpp..."
 g++ -m32 -ffreestanding -fno-exceptions -fno-rtti -O2 -c kernel.cpp -o build/kernel.o
 
 echo "Linking kernel..."
-ld -m elf_i386 -T linker.ld -o build/kernel.bin build/boot.o build/kernel.o build/sys_asm_funcs.o build/sys_input.o build/sys_cli_task.o build/sys_process.o build/sys_clock_task.o build/sys_scheduler.o build/sys_font.o build/sys_window.o build/sys_ps2_mouse_driver.o
+ld -m elf_i386 -T linker.ld -o build/kernel.bin build/boot.o build/kernel.o build/sys_asm_funcs.o build/sys_input.o build/sys_cli_task.o build/sys_process.o build/sys_clock_task.o build/sys_scheduler.o build/sys_font.o build/sys_window.o build/sys_ps2_mouse_driver.o build/sys_vga13h_screen.o
 
 if [ ! -s build/kernel.bin ]; then
     echo "Error: kernel.bin is empty or does not exist."

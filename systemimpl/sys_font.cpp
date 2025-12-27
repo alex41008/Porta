@@ -1,4 +1,5 @@
 #include "../systemh/sys_font.h"
+#include "../systemh/sys_vga13h_screen.h"
 
 const uint8_t font_8x8_data[1024] = {
     0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, // 0-3
@@ -83,18 +84,13 @@ const uint8_t font_8x8_data[1024] = {
 void FontEngine::draw_char(int x, int y, char c, uint8_t color) {
     if ((uint8_t)c >= 128) return;
 
-    uint8_t* vga = (uint8_t*)0xA0000;
     int font_index = (uint8_t)c * 8;
 
     for (int i = 0; i < 8; i++) {
         uint8_t line = font_8x8_data[font_index + i];
         for (int j = 0; j < 8; j++) {
             if (line & (0x80 >> j)) {
-                int px = x + j;
-                int py = y + i;
-                if (px >= 0 && px < 320 && py >= 0 && py < 200) {
-                    vga[py * 320 + px] = color;
-                }
+                put_pixel(x + j, y + i, color);
             }
         }
     }
