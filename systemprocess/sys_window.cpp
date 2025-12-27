@@ -2,11 +2,20 @@
 #include "../systemh/sys_definition_list.h"
 #include "../systemh/sys_vga13h_screen.h"
 
+#define MAX_WINDOWS 10
+Window* windows[MAX_WINDOWS];
+int window_count = 0;
+
+void register_window(Window* w) {
+    if (window_count < MAX_WINDOWS) {
+        windows[window_count++] = w;
+    }
+}
+
 void Window::draw() {
     clear_content(VGA_COLOR_BLACK);
     draw_border(1, 9);
     draw_title_bar(9);
-    //clear_content(VGA_COLOR_BLACK);
     //draw_text(x_ + 4, y_ + 20, "Hello, World!", VGA_COLOR_LIGHT_GREEN);
 }
 
@@ -31,7 +40,6 @@ void Window::clear_content(uint8_t color) {
     }
 }
 
-
 bool Window::is_over_title_bar(int mouse_x, int mouse_y) {
     return (mouse_x >= x_ && mouse_x < (x_ + width_) &&
             mouse_y >= y_ && mouse_y < (y_ + 12));
@@ -39,7 +47,7 @@ bool Window::is_over_title_bar(int mouse_x, int mouse_y) {
 
 void Window::draw_title_bar(uint8_t color) {
     for (int i = x_; i < x_ + width_; i++) {
-        for (int h = 0; h < 12; h++) {
+        for (int h = 0; h < 13; h++) {
              put_pixel(i, y_ + h, color);
         }
     }
