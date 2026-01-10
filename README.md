@@ -2,6 +2,8 @@
 
 Welcome to Porta, a 32-bit operating system that’s currently in its extremely early baby phase. This project is a personal side endeavor, created out of curiosity and a passion for low-level programming.
 
+![Alt text](user_files/impression.png)
+
 Disclaimer:
 Porta is completely unfinished and should be considered a work in progress. It’s not intended for practical use, and basically no features exist or are practically non-functional. This is purely a learning project, but I’m excited to share its progress with anyone interested in OS development.
 
