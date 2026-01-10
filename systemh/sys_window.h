@@ -7,6 +7,9 @@
 
 class Window {
     private:
+    int cursor_x_ = 0;
+    int cursor_y_ = 0;
+    bool show_cursor_ = true;
     int x_, y_;
     int width_, height_;
     const char* title_;
@@ -32,6 +35,10 @@ class Window {
     void draw();
     void move(int new_x, int new_y);
     bool is_over_title_bar(int mouse_x, int mouse_y);
+    void put_pixel_in_window(int rel_x, int rel_y, uint8_t color);
+    void write_content_text(int relative_x, int relative_y, const char* text, uint8_t color);
+    void set_cursor_pos(int rel_x, int rel_y) {cursor_x_ = rel_x; cursor_y_ = rel_y;}
+    void draw_cursor(bool blink_state);
     
     int get_x() { return x_; }
     int get_y() { return y_; }

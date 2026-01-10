@@ -21,11 +21,11 @@ uint16_t cursor_y = 0;
 kernel_program krnl;
 
 uint8_t shell_stack[4096];
-uint8_t clock_stack[4096];
+//uint8_t clock_stack[4096];
 uint8_t gui_stack[8192];
 
 CLI_Task shell(1, shell_stack, 4096);
-Clock_Task clock_task(2, clock_stack, 4096);
+//Clock_Task clock_task(2, clock_stack, 4096);
 
 extern "C" int __cxa_guard_acquire(long long int *g) { return 0; }
 extern "C" void __cxa_guard_release(long long int *g) { (void)g; }
@@ -55,8 +55,7 @@ extern "C" void kernel_main(multiboot_info *mbi)
     asm volatile("sti");
 
     krnl.k_init_cli(); 
-
-    shell.execute(); 
+    run_interface_vga13h();
 
     while (true) {
         asm volatile("hlt");

@@ -13,6 +13,8 @@ public:
 
     void execute() override;
 
+    void execute_windowed(FontEngine& font);
+
     void terminate() override;
 };
 

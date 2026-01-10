@@ -19,7 +19,6 @@ void Window::draw() {
     //draw_text(x_ + 4, y_ + 20, "Hello, World!", VGA_COLOR_LIGHT_GREEN);
 }
 
-
 void Window::draw_border(uint8_t thickness, uint8_t color) {
     for (int i = x_; i < x_ + width_; i++) {
         put_pixel(i, y_, color);                 
@@ -62,4 +61,27 @@ void Window::draw_title_bar(uint8_t color) {
 void Window::move(int new_x, int new_y) {
     this->x_ = new_x;
     this->y_ = new_y;
+}
+
+void Window::write_content_text(int relative_x, int relative_y, const char* text, uint8_t color) {
+    int absolute_x = x_ + 4 + relative_x; 
+    int absolute_y = y_ + 14 + relative_y;
+
+    font_.draw_string(absolute_x, absolute_y, text, color);
+}
+
+void Window::put_pixel_in_window(int rel_x, int rel_y, uint8_t color) {
+    if (rel_x > 0 && rel_x < (width_ - 2) && rel_y > 0 && rel_y < (height_ - 14)) {
+        put_pixel(x_ + rel_x, y_ + 13 + rel_y, color);
+    }
+}
+void Window::draw_cursor(bool blink_state) {
+    if (!blink_state) return;
+
+    int abs_x = x_ + 4 + cursor_x_;
+    int abs_y = y_ + 14 + cursor_y_;
+
+    for (int i = 0; i < 8; i++) {
+        put_pixel(abs_x, abs_y + i, VGA_COLOR_LIGHT_GREY);
+    }
 }

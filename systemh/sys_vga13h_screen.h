@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "sys_io.h"
+#include "sys_definition_list.h"
 
 #define VGA_WIDTH_13H 320
 #define VGA_HEIGHT_13H 200
@@ -41,8 +42,7 @@ inline void draw_rectangle(int x, int y, int width, int height, uint8_t color_in
 inline void draw_pattern_background() {
     for (int y = 0; y < VGA_HEIGHT_13H; y++) {
         for (int x = 0; x < VGA_WIDTH_13H; x++) {
-            uint8_t color = (x / 12 + y / 6) % VGA_COLOR_COUNT;
-            put_pixel(x, y, color);
+            put_pixel(x, y, VGA_COLOR_CYAN);
         }
     }
 }
@@ -118,6 +118,25 @@ inline void draw_cursor(int mx, int my, int last_mx, int last_my, int CURSOR_COL
             last_mx = mx;
             last_my = my;
 }
+inline void draw_text_cursor(int mx, int my, int last_mx, int last_my, int CURSOR_COLOR) {
+           
+            put_pixel(mx, my, CURSOR_COLOR);
+            put_pixel(mx+1, my, CURSOR_COLOR);
+            put_pixel(mx+2, my, CURSOR_COLOR);
+            put_pixel(mx-1, my, CURSOR_COLOR);
+            put_pixel(mx-2, my, CURSOR_COLOR);
+            for(int i = 0; i < 14; i++) {
+                put_pixel(mx, my + i, CURSOR_COLOR);
+            }
+            put_pixel(mx, my+14, CURSOR_COLOR);
+            put_pixel(mx+1, my+14, CURSOR_COLOR);
+            put_pixel(mx+2, my+14, CURSOR_COLOR);
+            put_pixel(mx-1, my+14, CURSOR_COLOR);
+            put_pixel(mx-2, my+14, CURSOR_COLOR);
+
+            last_mx = mx;
+            last_my = my;
+}
 
 inline void vga_set_mode_13h() {
     
@@ -163,5 +182,7 @@ inline void vga_set_mode_13h() {
         g_vga_framebuffer[i] = 0;
     }
 }
+
+void run_interface_vga13h();
 
 #endif // SYS_VGA13H_SCREEN_H
