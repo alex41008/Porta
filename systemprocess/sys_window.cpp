@@ -85,3 +85,7 @@ void Window::draw_cursor(bool blink_state) {
         put_pixel(abs_x, abs_y + i, VGA_COLOR_LIGHT_GREY);
     }
 }
+bool Window::is_inside_content(int mx, int my) {
+    return (mx > x_ && mx < (x_ + width_ - 1) &&
+            my > (y_ + 12) && my < (y_ + height_ - 1));
+}

@@ -26,9 +26,7 @@ void run_interface_vga13h() {
     vga_set_mode_13h();
     PS2Mouse::init(); 
 
-    Window test_window(40, 30, 180, 100, "WINDOW", font);
-    register_window(&test_window);
-    Window shell_window(50, 30, 180, 100, "SHELL ROOT", font);
+    Window shell_window(50, 30, 180, 100, "SHELL", font);
     register_window(&shell_window);
     Shell shell(1, nullptr, 0, &shell_window);
 
@@ -40,6 +38,7 @@ void run_interface_vga13h() {
     bool needs_redraw = true;
     uint32_t frame_counter = 0;
     bool cursor_visible = true;
+    uint8_t cursor_type = 0;
 
     cls();
 
@@ -53,10 +52,6 @@ void run_interface_vga13h() {
         
         *((uint8_t*)0xA0000 + 0) = (uint8_t)(kbd_write_ptr % 10) + 48;
         *((uint8_t*)0xA0000 + 2) = (uint8_t)(kbd_read_ptr % 10) + 48;
-        uint8_t sc;
-            if (sc == 0x01) {
-                in_gui = false;
-            }
 
         int mx = PS2Mouse::get_x();
         int my = PS2Mouse::get_y();
@@ -66,6 +61,20 @@ void run_interface_vga13h() {
         
         font.draw_string(10, 10, "PORTA", VGA_COLOR_BLACK);
         
+        uint8_t sc = scankey();
+if (sc != 0 && !(sc & 0x80)) { // 0x80 prüft ob Taste gedrückt (nicht losgelassen)
+    char c = scancode_to_ascii(sc);
+    
+    if (c == '\b') {
+        shell.backspace();
+    } else if (c == '\n') {
+        // Hier könntest du shell.process_command() aufrufen
+        // Für jetzt: Einfach Buffer leeren oder ignorieren
+    } else if (c >= 32 && c <= 126) {
+        shell.add_char(c);
+    }
+}
+
         for (int i = 0; i < window_count; i++) {
         windows[i]->draw();
         
@@ -77,8 +86,11 @@ void run_interface_vga13h() {
              windows[i]->draw_cursor(cursor_visible);
         }
     }
-
-        draw_cursor(mx, my, last_mx, last_my, CURSOR_COLOR);
+        if(cursor_type == 0) {
+            draw_cursor(mx, my, last_mx, last_my, CURSOR_COLOR);
+        } else {
+            draw_text_cursor(mx, my, last_mx, last_my, CURSOR_COLOR);
+        }
         
         vga_flip();
         last_mx = mx;
@@ -98,6 +110,7 @@ if (PS2Mouse::left_clicked()) {
     
             offset_x = mx - dragged_window->get_x();
             offset_y = my - dragged_window->get_y();
+            cursor_type = 0;
             break;
             }
         }
@@ -106,6 +119,18 @@ if (PS2Mouse::left_clicked()) {
     if (dragged_window != nullptr) {
         dragged_window->move(mx - offset_x, my - offset_y);
     }
+
+    if (shell_window.is_inside_content(mx, my)) {
+
+        int rel_x = mx - shell_window.get_x() - 4;
+        int rel_y = my - shell_window.get_y() - 14;
+
+        int grid_x = (rel_x / 8) * 8;
+        int grid_y = (rel_y / 8) * 8;
+
+        shell_window.set_cursor_pos(grid_x, grid_y);
+        cursor_type = 1;
+        }
 } else {
     dragged_window = nullptr;
 }

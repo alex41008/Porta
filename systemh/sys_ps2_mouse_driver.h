@@ -13,6 +13,8 @@ public:
     static int get_x() { return mouse_x; }
     static int get_y() { return mouse_y; }
     static bool left_clicked() { return (buttons & 0x01); }
+    bool is_left_pressed();
+    bool is_right_pressed();
 
 private:
     static void wait_write();

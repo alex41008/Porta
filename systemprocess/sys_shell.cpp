@@ -1,21 +1,35 @@
-#include <stdint.h>
-#include "../systemh/sys_window.h"
-#include "../systemh/sys_cli_task.h"
-#include "../systemh/sys_vga13h_screen.h"
-#include "../systemh/sys_process.h"
-#include "../systemh/sys_definition_list.h"
+#include "../systemh/sys_shell.h"
 
-class Shell : public SystemProcess {
-private:
-    Window* window_;
-    char shell_history[10][40];
-    int cursor_row = 0;
+#define SHELL_BUFFER_MAX 64
 
-public:
-    Shell(uint8_t id, uint8_t* stack, size_t stack_s, Window* win) 
-        : SystemProcess(id, "Shell", stack, stack_s), window_(win) {}
 
-    void execute_windowed() {
-        window_->write_content_text(0, cursor_row * 10, "Porta-Shell $> ", VGA_COLOR_LIGHT_GREEN);
+void Shell::add_char(char c) {
+    if (input_index < SHELL_BUFFER_MAX - 1) {
+        input_buffer[input_index] = c;
+        input_index++;
+        input_buffer[input_index] = '\0';
     }
-};
+}
+
+void Shell::backspace() {
+    if (input_index > 0) {
+        input_index--;
+        input_buffer[input_index] = '\0';
+    }
+}
+
+const char* Shell::get_buffer() {
+    return input_buffer;
+}
+
+int Shell::get_input_length() {
+    return input_index;
+}
+
+void Shell::execute() {
+
+}
+
+void Shell::terminate() {
+
+}

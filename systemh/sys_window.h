@@ -39,6 +39,7 @@ class Window {
     void write_content_text(int relative_x, int relative_y, const char* text, uint8_t color);
     void set_cursor_pos(int rel_x, int rel_y) {cursor_x_ = rel_x; cursor_y_ = rel_y;}
     void draw_cursor(bool blink_state);
+    bool is_inside_content(int mx, int my);
     
     int get_x() { return x_; }
     int get_y() { return y_; }
